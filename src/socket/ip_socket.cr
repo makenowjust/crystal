@@ -1,3 +1,5 @@
+require "punycode"
+
 class IPSocket < Socket
   def local_address
     sockaddr = uninitialized LibC::SockAddrIn6
@@ -45,6 +47,12 @@ class IPSocket < Socket
   end
 
   def self.getaddrinfo(host, port, family, socktype, protocol = LibC::IPPROTO_IP, timeout = nil)
+    # RFC 3986 says:
+    # > When a non-ASCII registered name represents an internationalized domain name
+    # > intended for resolution via the DNS, the name must be transformed to the IDNA
+    # > encoding [RFC3490] prior to name lookup.
+    host = Punycode.to_ascii host
+
     hints = LibC::Addrinfo.new
     hints.family = (family || LibC::AF_UNSPEC).to_i32
     hints.socktype = socktype
