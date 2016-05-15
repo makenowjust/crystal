@@ -452,6 +452,14 @@ module Crystal
     def visit(node : Assign)
       type_assign node.target, node.value, node
 
+      if (target = node.target).is_a?(Global) && target.name.starts_with? "$$"
+        expanded = Call.new(Global.new("$__crystal_persistent"), "[]=", [StringLiteral.new(target.name), node.value] of ASTNode)
+        expanded.accept self
+        node.expanded = expanded
+        node.bind_to expanded
+        return false
+      end
+
       if @is_initialize && !@found_self_in_initialize_call
         value = node.value
         if value.is_a?(Var) && value.name == "self"
@@ -632,7 +640,7 @@ module Crystal
     end
 
     def type_assign(target, value, node)
-      raise "Bug: unknown assign target in type inference: #{target}"
+      target.raise "Bug: unknown assign target in type inference: #{target}"
     end
 
     def visit(node : Def)

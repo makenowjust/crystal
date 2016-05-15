@@ -187,6 +187,10 @@ module Crystal
     end
 
     def transform(node : Assign)
+      if expanded = node.expanded
+        return expanded.transform(self)
+      end
+
       reset_last_status
 
       target = node.target
@@ -258,15 +262,26 @@ module Crystal
     end
 
     def transform(node : Global)
+      global_var = @program.global_vars[node.name]
       if const_node = @const_being_initialized
         const_being_initialized = const_node.target_const.not_nil!
 
         if !@program.initialized_global_vars.includes?(node.name)
-          global_var = @program.global_vars[node.name]
           if global_var.type?.try { |t| !t.includes_type?(@program.nil) }
             const_node.raise "constant #{const_being_initialized} requires initialization of #{node}, \
                                         which is initialized later. Initialize #{node} before #{const_being_initialized}"
           end
+        end
+
+      end
+
+      if global_var.persistent?
+        if type = global_var.type?
+          cast = Cast.new(Call.new(Global.new("$__crystal_persistent"), "[]", [StringLiteral.new(node.name)] of ASTNode), TypeNode.new(type))
+          cast.accept MainVisitor.new @program
+          return cast.transform self
+        else
+          node.raise "a persistent variable must be typed"
         end
       end
 

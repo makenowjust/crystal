@@ -854,12 +854,20 @@ module Crystal
           :instance
         end
       else
-        :global
+        if name[1] == '$'
+          :persistent
+        else
+          :global
+        end
       end
     end
 
     def global?
-      kind == :global
+      name[0] == '$'
+    end
+
+    def persistent?
+      kind == :persistent
     end
   end
 
@@ -937,6 +945,10 @@ module Crystal
 
   class IsA
     property syntax_replacement : Call?
+  end
+
+  class Assign
+    property expanded : ASTNode?
   end
 
   module ExpandableNode
