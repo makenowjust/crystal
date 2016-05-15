@@ -249,10 +249,22 @@ module Crystal
 
     # Check if the right hand side is dead code
     def transform(node : Assign)
+      if (target = node.target).is_a?(Global) && target.name.starts_with? "$$"
+        return Call.new(Global.new("$__crystal_persistent"), "[]=", [StringLiteral.new(target.name), node.value] of ASTNode).at(node).transform(self)
+      end
+
       super
 
       if @dead_code
         node.value
+      else
+        node
+      end
+    end
+
+    def transform(node : Global)
+      if node.name.starts_with? "$$"
+        Call.new(Global.new("$__crystal_persistent"), "[]", [StringLiteral.new(node.name)] of ASTNode).at(node).transform(self)
       else
         node
       end
