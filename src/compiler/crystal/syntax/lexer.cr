@@ -636,6 +636,17 @@ module Crystal
           end
           @token.type = :GLOBAL_MATCH_DATA_INDEX
           @token.value = string_range_from_pool(start)
+        when '$'
+          next_char
+          if ident_start?(current_char)
+            while ident_part?(next_char)
+              # Nothing to do
+            end
+            @token.type = :PERSISTENT
+            @token.value = string_range_from_pool(start)
+          else
+            unknown_token
+          end
         else
           if ident_start?(current_char)
             while ident_part?(next_char)
