@@ -450,15 +450,16 @@ module Crystal
     end
 
     def visit(node : Assign)
-      type_assign node.target, node.value, node
-
       if (target = node.target).is_a?(Global) && target.name.starts_with? "$$"
         expanded = Call.new(Global.new("$__crystal_persistent"), "[]=", [StringLiteral.new(target.name), node.value] of ASTNode)
         expanded.accept self
         node.expanded = expanded
         node.bind_to expanded
+        type_assign node.target, node.value, node, true
         return false
       end
+
+      type_assign node.target, node.value, node
 
       if @is_initialize && !@found_self_in_initialize_call
         value = node.value
@@ -469,8 +470,8 @@ module Crystal
       false
     end
 
-    def type_assign(target : Var, value, node)
-      value.accept self
+    def type_assign(target : Var, value, node, value_accepted = false)
+      value.accept self unless value_accepted
 
       target.bind_to value
       node.bind_to value
@@ -525,14 +526,14 @@ module Crystal
       end
     end
 
-    def type_assign(target : InstanceVar, value, node)
+    def type_assign(target : InstanceVar, value, node, value_accepted = false)
       # Check if this is an instance variable initializer
       unless @scope
         # Already handled by InstanceVarsInitializerVisitor
         return
       end
 
-      value.accept self
+      value.accept self unless value_accepted
 
       var = lookup_instance_var target
 
@@ -576,10 +577,10 @@ module Crystal
       false
     end
 
-    def type_assign(target : Global, value, node)
+    def type_assign(target : Global, value, node, value_accepted = false)
       attributes = check_valid_attributes target, ValidGlobalAttributes, "global variable"
 
-      value.accept self
+      value.accept self unless value_accepted
 
       var = lookup_global_variable(target)
 
@@ -599,7 +600,7 @@ module Crystal
       var.bind_to value
     end
 
-    def type_assign(target : ClassVar, value, node)
+    def type_assign(target : ClassVar, value, node, value_accepted = false)
       attributes = check_valid_attributes target, ValidClassVarAttributes, "class variable"
 
       # Outside a def is already handled by ClassVarsInitializerVisitor
@@ -611,7 +612,7 @@ module Crystal
         return
       end
 
-      value.accept self
+      value.accept self unless value_accepted
 
       var = lookup_class_var(target)
       check_class_var_is_thread_local(target, var, attributes)
@@ -634,12 +635,12 @@ module Crystal
       target.var = var
     end
 
-    def type_assign(target : Underscore, value, node)
+    def type_assign(target : Underscore, value, node, value_accepted = false)
       value.accept self
       node.bind_to value
     end
 
-    def type_assign(target, value, node)
+    def type_assign(target, value, node, value_accepted = false)
       target.raise "Bug: unknown assign target in type inference: #{target}"
     end
 
