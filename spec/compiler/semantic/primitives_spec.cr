@@ -21,6 +21,14 @@ describe "Semantic: primitives" do
     assert_type("2.3_f64") { float64 }
   end
 
+  it "types a Complex" do
+    assert_type(%(
+      require "prelude"
+
+      1j
+      )) { types["Complex"] }
+  end
+
   it "types a char" do
     assert_type("'a'") { char }
   end

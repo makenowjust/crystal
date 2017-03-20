@@ -41,6 +41,7 @@ describe Crystal::Formatter do
   assert_format "0_u64", "0_u64"
   assert_format "0u64", "0u64"
   assert_format "0i64", "0i64"
+  assert_format "1j"
 
   assert_format "   1", "1"
   assert_format "\n\n1", "1"

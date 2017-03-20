@@ -104,4 +104,5 @@ describe "ASTNode#to_s" do
   expect_to_s %(enum Foo\n  A = 0\n  B\nend)
   expect_to_s %(alias Foo = Void)
   expect_to_s %(type(Foo = Void))
+  expect_to_s %(1j)
 end
