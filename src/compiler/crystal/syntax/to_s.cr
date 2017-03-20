@@ -79,6 +79,11 @@ module Crystal
       true
     end
 
+    def visit(node : ImaginaryNumberLiteral)
+      node.number.accept self
+      @str << "j"
+    end
+
     def visit(node : CharLiteral)
       node.value.inspect(@str)
     end

@@ -405,6 +405,11 @@ module Crystal
       node
     end
 
+    def transform(node : ImaginaryNumberLiteral)
+      node.number = node.number.transform self
+      node
+    end
+
     def transform(node : CharLiteral)
       node
     end

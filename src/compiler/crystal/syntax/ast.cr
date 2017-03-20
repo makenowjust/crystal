@@ -211,6 +211,23 @@ module Crystal
     def_hash value, kind
   end
 
+  # An imaginary number literal.
+  #
+  #     1j
+  #
+  class ImaginaryNumberLiteral < ASTNode
+    property number
+
+    def initialize(@number : ASTNode)
+    end
+
+    def clone_without_location
+      ImaginaryNumberLiteral.new @number.clone
+    end
+
+    def_equals_and_hash number
+  end
+
   # A char literal.
   #
   #     "'" \w "'"
