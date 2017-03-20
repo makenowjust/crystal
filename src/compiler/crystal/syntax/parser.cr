@@ -850,7 +850,11 @@ module Crystal
         parse_attribute
       when :NUMBER
         @wants_regex = false
-        node_and_next_token NumberLiteral.new(@token.value.to_s, @token.number_kind)
+        node = node_and_next_token NumberLiteral.new(@token.value.to_s, @token.number_kind)
+        if @token.type == :IDENT && @token.value == "j"
+          node = node_and_next_token ImaginaryNumberLiteral.new node
+        end
+        node
       when :CHAR
         node_and_next_token CharLiteral.new(@token.value.as(Char))
       when :STRING, :DELIMITER_START
