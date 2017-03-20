@@ -393,6 +393,15 @@ module Crystal
       false
     end
 
+    def visit(node : ImaginaryNumberLiteral)
+      node.number.accept self
+      check_ident "j"
+      write "j"
+      next_token
+
+      false
+    end
+
     def visit(node : StringLiteral)
       @last_is_heredoc = false
 
@@ -4486,6 +4495,11 @@ module Crystal
 
     def check(token_type)
       raise "expecting #{token_type}, not `#{@token.type}, #{@token.value}`, at #{@token.location}" unless @token.type == token_type
+    end
+
+    def check_ident(token_value)
+      check :IDENT
+      raise "expecting `#{token_value}`, not `#{@token.value}`, at #{@token.location}" unless @token.value == token_value
     end
 
     def check_end
