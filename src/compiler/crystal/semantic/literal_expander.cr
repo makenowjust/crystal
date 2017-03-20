@@ -659,6 +659,22 @@ module Crystal
       Call.new(Path.global(["Regex", "Options"]).at(node), "new", NumberLiteral.new(node.options.value).at(node)).at(node)
     end
 
+    # Convert a imaginary number literal to a call:
+    #
+    # From:
+    #
+    #     1j
+    #
+    # To:
+    #
+    #     Complex.new(0, 1)
+    #
+    def expand(node : ImaginaryNumberLiteral)
+      path = Path.global("Complex").at(node)
+      zero = NumberLiteral.new("0.0", :f64)
+      Call.new(path, "new", zero, node.number).at(node)
+    end
+
     def expand(node)
       raise "#{node} (#{node.class}) can't be expanded"
     end

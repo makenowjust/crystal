@@ -2717,6 +2717,10 @@ module Crystal
       node.type = program.type_from_literal_kind node.kind
     end
 
+    def visit(node : ImaginaryNumberLiteral)
+      expand(node)
+    end
+
     def visit(node : CharLiteral)
       node.type = program.char
     end
