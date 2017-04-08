@@ -108,26 +108,24 @@ module Crystal
       @def_with_yield = nil
     end
 
-    def process_instance_defs(type)
-      if type.is_a?(DefInstanceContainer)
-        type.def_instances.values.try do |typed_defs|
-          typed_defs.each do |typed_def|
-            if loc = typed_def.location
-              if loc.filename == typed_def.end_location.try(&.filename) && contains_target(typed_def)
-                visit_and_append_context(typed_def) do
-                  yield
-                  add_context "self", type
-                  if type.is_a?(InstanceVarContainer)
-                    type.instance_vars.values.each do |ivar|
-                      add_context ivar.name, ivar.type
-                    end
-                  end
-                end
-              end
+    def process_instance_defs(type : DefInstanceContainer)
+      type.def_instances.each_value do |typed_def|
+        next unless loc = typed_def.location
+        next unless loc.filename == typed_def.end_location.try(&.filename) && contains_target(typed_def)
+
+        visit_and_append_context(typed_def) do
+          yield
+          add_context "self", type
+          if type.is_a?(InstanceVarContainer)
+            type.instance_vars.values.each do |ivar|
+              add_context ivar.name, ivar.type
             end
           end
         end
       end
+    end
+
+    def process_instance_defs(type, &block)
     end
 
     def process_type(type)
@@ -135,7 +133,9 @@ module Crystal
     end
 
     def process_type(type, &block)
-      if type.is_a?(NamedType)
+      return unless type
+
+      if type.is_a?(NamedType) || type.is_a?(Program) || type.is_a?(FileModule)
         type.types?.try &.values.each do |inner_type|
           process_type(inner_type)
         end
@@ -153,19 +153,14 @@ module Crystal
           end
         end
       else
-        process_instance_defs type.metaclass, &block
+        process_instance_defs type.metaclass, &block if type != type.metaclass
         process_instance_defs type, &block
       end
     end
 
     def process(result : Compiler::Result)
-      result.program.def_instances.each_value do |typed_def|
-        visit_and_append_context typed_def
-      end
-
-      result.program.types?.try &.values.each do |type|
-        process_type type
-      end
+      process_type result.program
+      process_type result.program.file_module?(@target_location.original_filename)
 
       if @contexts.empty?
         @context = HashStringType.new
@@ -283,7 +278,7 @@ module Crystal
 
     private def add_context(name, type)
       return if name.starts_with?("__temp_") # ignore temp vars
-      return if name == "self" && type.to_s == "<Program>"
+      return if type.is_a?(Program) || type.is_a?(FileModule)
 
       @context[name] = type
     end
