@@ -34,8 +34,8 @@ class Crystal::Call
 
     case obj_type
     when NoReturnType
-      # A call on NoReturn will be NoReturn, so there's nothing to do
-      return
+      # A call on NoReturn is a bug normally, so it raises an error.
+      obj.not_nil!.raise "NoReturn cannot call any methods (infinity recursion?)"
     when LibType
       # `LibFoo.call` has a separate logic
       return recalculate_lib_call obj_type
@@ -49,7 +49,12 @@ class Crystal::Call
 
     check_not_lib_out_args
 
-    return if args.any? &.type?.try &.no_return?
+    args.each do |arg|
+      if arg.type?.try &.no_return?
+        # A call with NoReturn is a bug normally, so it raises an error.
+        arg.raise "NoReturn cannot be passed to any methods as argument (infinity recursion?)"
+      end
+    end
 
     return unless obj_and_args_types_set?
 
