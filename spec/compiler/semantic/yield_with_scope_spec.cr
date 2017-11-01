@@ -186,4 +186,43 @@ describe "Semantic: yield with scope" do
       Bar.new.bar
       )) { int32 }
   end
+
+  it "cannot call yield with another type scope" do
+    assert_error %(
+      def foo
+        with 123 yield
+        with 3.14 yield
+      end
+
+      foo do
+      end
+      ),
+      "type must be Int32, not Float64"
+  end
+
+  it "cannot call yield without scope after scoped" do
+    assert_error %(
+      def foo
+        with 123 yield
+        yield
+      end
+
+      foo do
+      end
+      ),
+      "'yield' needs scope"
+  end
+
+  it "cannot call yield with scope after not scoped" do
+    assert_error %(
+      def foo
+        yield
+        with 3.14 yield
+      end
+
+      foo do
+      end
+      ),
+      "can't specify scope to 'yield'"
+  end
 end

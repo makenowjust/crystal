@@ -957,6 +957,13 @@ module Crystal
         return false
       end
 
+      if scope = node.scope
+        node.raise "can't specify scope to 'yield'" if !block.scope && block.visited?
+        scope.freeze_type = block.scope
+      elsif block.scope
+        node.raise "'yield' needs scope"
+      end
+
       node.scope.try &.accept self
       node.exps.each &.accept self
 
