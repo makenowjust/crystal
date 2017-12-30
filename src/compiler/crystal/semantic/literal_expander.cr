@@ -390,6 +390,10 @@ module Crystal
 
         assigns = [] of ASTNode
         temp_vars = conds.map do |cond|
+          if cond.is_a?(Expressions) && cond.expressions.size == 1
+            cond = cond[0]
+          end
+
           case cond
           when Var, InstanceVar
             temp_var = cond
