@@ -654,6 +654,11 @@ module Crystal
 
       assert_syntax_error "case #{keyword}; when 1; end; end", "void value expression"
       assert_syntax_error "case 1; when #{keyword}; end; end", "void value expression"
+
+      assert_syntax_error "#{keyword} foo: 1", "named argument is not allowed here", line: 1, column: keyword.size + 2
+      assert_syntax_error %(#{keyword} "foo bar": 1), "named argument is not allowed here", line: 1, column: keyword.size + 2
+      assert_syntax_error "#{keyword} 1, foo: 2", "named argument is not allowed here", line: 1, column: keyword.size + 5
+      assert_syntax_error %(#{keyword} 1, "foo bar": 2), "named argument is not allowed here", line: 1, column: keyword.size + 5
     end
 
     it_parses "yield", Yield.new
@@ -661,6 +666,11 @@ module Crystal
     it_parses "yield 1", Yield.new([1.int32] of ASTNode)
     it_parses "yield 1 if true", If.new(true.bool, Yield.new([1.int32] of ASTNode))
     it_parses "yield if true", If.new(true.bool, Yield.new)
+
+    assert_syntax_error "yield foo: 1", "named argument is not allowed here", line: 1, column: 7
+    assert_syntax_error %(yield "foo bar": 1), "named argument is not allowed here", line: 1, column: 7
+    assert_syntax_error "yield 1, foo: 2", "named argument is not allowed here", line: 1, column: 10
+    assert_syntax_error %(yield 1, "foo bar": 2), "named argument is not allowed here", line: 1, column: 10
 
     it_parses "Int", "Int".path
 

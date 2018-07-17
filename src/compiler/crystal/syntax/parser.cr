@@ -4150,10 +4150,12 @@ module Crystal
             end
 
             if @token.type == :IDENT && current_char == ':'
+              unexpected_named_arg if control
               return parse_call_args_named_args(@token.location, args, first_name: nil, allow_newline: true)
             else
               arg = parse_call_arg(found_double_splat)
               if @token.type == :":" && arg.is_a?(StringLiteral)
+                unexpected_named_arg(arg.location) if control
                 return parse_call_args_named_args(arg.location.not_nil!, args, first_name: arg.value, allow_newline: true)
               else
                 args << arg
@@ -4261,10 +4263,12 @@ module Crystal
         end
 
         if @token.type == :IDENT && current_char == ':'
+          unexpected_named_arg if control
           return parse_call_args_named_args(@token.location, args, first_name: nil, allow_newline: false)
         else
           arg = parse_call_arg(found_double_splat)
           if @token.type == :":" && arg.is_a?(StringLiteral)
+            unexpected_named_arg(arg.location) if control
             return parse_call_args_named_args(arg.location.not_nil!, args, first_name: arg.value, allow_newline: false)
           else
             args << arg
@@ -4288,6 +4292,10 @@ module Crystal
       CallArgs.new args, nil, nil, nil, false, end_location, has_parentheses: false
     ensure
       @call_args_nest -= 1
+    end
+
+    def unexpected_named_arg(loc = @token.location)
+      raise "named argument is not allowed here", loc.not_nil!
     end
 
     def parse_call_args_named_args(location, args, first_name, allow_newline)
