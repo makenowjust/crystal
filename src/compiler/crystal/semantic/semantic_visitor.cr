@@ -376,6 +376,11 @@ abstract class Crystal::SemanticVisitor < Crystal::Visitor
             end
           end
           expanded
+
+        # When StringInterpolation contains StringLiteral only,
+        # reduce this to StringLiteral for back-compatibility and convenience.
+        elsif arg.is_a?(StringInterpolation) && (string_literal = arg.reduce_to_string_literal?)
+          string_literal
         else
           arg
         end

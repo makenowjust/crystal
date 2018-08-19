@@ -294,6 +294,10 @@ module Crystal
   end
 
   class StringInterpolation < ASTNode
+    # Odd-index elements are always `StringLiteral` and
+    # it means string literal part, and even-index elements are some
+    # `ASTNode` and it means interpolation part.
+    # For example `expression` of `"123#{456}7#{"8"}"` is `["123", 456, "7", "8", ""]`.
     property expressions : Array(ASTNode)
 
     def initialize(@expressions : Array(ASTNode))
@@ -305,6 +309,19 @@ module Crystal
 
     def clone_without_location
       StringInterpolation.new(@expressions.clone)
+    end
+
+    # Does this node contain `StringLiteral` only?
+    def simple_string_literal?
+      @expressions.all? &.is_a?(StringLiteral)
+    end
+
+    # Return single `StringLiteral` if possible or return itself.
+    def reduce_to_string_literal? : StringLiteral?
+      if simple_string_literal?
+        value = @expressions.join &.as(StringLiteral).value
+        return StringLiteral.new(value).at(self)
+      end
     end
 
     def_equals_and_hash expressions

@@ -152,13 +152,19 @@ module Crystal
     end
 
     def visit(node : StringInterpolation)
+      if string_literal = node.reduce_to_string_literal?
+        @last = string_literal
+        return false
+      end
+
       @last = StringLiteral.new(String.build do |str|
         node.expressions.each do |exp|
-          if exp.is_a?(StringLiteral)
-            str << exp.value
+          exp.accept self
+          last = @last
+          if last.is_a?(StringLiteral)
+            str << last.value
           else
-            exp.accept self
-            @last.to_s(str)
+            last.to_s(str)
           end
         end
       end).at(node)
@@ -419,7 +425,11 @@ module Crystal
 
       case matched_type
       when Const
-        matched_type.value
+        matched_node = matched_type.value
+        if matched_node.is_a?(StringInterpolation) && (string_literal = matched_node.reduce_to_string_literal?)
+          matched_node = string_literal
+        end
+        matched_node
       when Type
         matched_type = matched_type.remove_alias
 

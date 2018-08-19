@@ -540,43 +540,33 @@ module Crystal
       heredoc_line = @line
       heredoc_end = @line
 
-      node.expressions.each do |exp|
-        if @token.type == :DELIMITER_END
-          # If the delimiter ends with '\n' it's something like "\n  HEREDOC",
-          # so we are done
-          break if @token.raw.starts_with?('\n')
+      node.expressions.each_with_index do |exp, i|
+        if i % 2 == 0 # string-literal part
+          while @token.type != :INTERPOLATION_START
+            if @token.type == :DELIMITER_END
+              if space_slash_newline?
+                # This is for " ... " \
+                #     " ... "
+                @indent = column if @string_continuation == 0
+                @string_continuation += 1
 
-          # This is for " ... " \
-          #     " ... "
-          @indent = column if @string_continuation == 0
-          @string_continuation += 1
-
-          write @token.raw
-          write " \\"
-          write_line
-          next_token_skip_space_or_newline
-          check :DELIMITER_START
-          write_indent
-          write @token.raw
-          next_string_token
-        end
-
-        if exp.is_a?(StringLiteral)
-          # It might be #{__DIR__}, for example
-          if @token.type == :INTERPOLATION_START
-            next_token_skip_space_or_newline
-            write "\#{"
-            write @token.type
-            next_token_skip_space_or_newline
-            check :"}"
-            write "}"
-          else
-            write @token.raw
+                write @token.raw
+                write " \\"
+                write_line
+                next_token_skip_space_or_newline
+                check :DELIMITER_START
+                write_indent
+                write @token.raw
+                next_string_token
+              else
+                break
+              end
+            else
+              write @token.raw
+              next_string_token
+            end
           end
-          next_string_token
-        else
-          skip_strings
-
+        else # interpolation part
           check :INTERPOLATION_START
           write "\#{"
           delimiter_state = @token.delimiter_state
@@ -603,8 +593,6 @@ module Crystal
         end
       end
 
-      skip_strings
-
       heredoc_end = @line
 
       check :DELIMITER_END
@@ -627,15 +615,6 @@ module Crystal
       @indent = old_indent unless is_heredoc
 
       false
-    end
-
-    private def skip_strings
-      # Heredocs might indice some spaces that are removed
-      # because of indentation
-      while @token.type == :STRING
-        write @token.raw
-        next_string_token
-      end
     end
 
     private def consume_heredocs

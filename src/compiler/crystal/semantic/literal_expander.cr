@@ -305,6 +305,10 @@ module Crystal
         end
       end
 
+      if string_literal = node.reduce_to_string_literal?
+        return string_literal
+      end
+
       if capacity <= 64
         call = Call.new(Path.global(["String", "Builder"]), "new").at(node)
       else
@@ -312,6 +316,8 @@ module Crystal
       end
 
       node.expressions.each do |piece|
+        # skip an empty string
+        next if piece.is_a?(StringLiteral) && piece.value.empty?
         call = Call.new(call, "<<", piece).at(node)
       end
       Call.new(call, "to_s").at(node)

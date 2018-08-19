@@ -26,6 +26,7 @@ module Crystal
       count = 0
 
       args.each do |arg|
+        arg = arg.reduce_to_string_literal? || arg if arg.is_a?(StringInterpolation)
         case count
         when 0
           arg.raise "'lib' link argument must be a String" unless arg.is_a?(StringLiteral)
@@ -48,6 +49,7 @@ module Crystal
 
       named_args.try &.each do |named_arg|
         value = named_arg.value
+        value = value.reduce_to_string_literal? || value if value.is_a?(StringInterpolation)
 
         case named_arg.name
         when "lib"
