@@ -1973,8 +1973,9 @@ module Crystal
       end
 
       if has_interpolation
-        pieces = combine_interpolation_pieces(pieces, delimiter_state)
+        pieces, starts_with_interpolation = combine_interpolation_pieces(pieces, delimiter_state)
         result = StringInterpolation.new(pieces).at(location)
+        result.starts_with_interpolation = starts_with_interpolation
       else
         string = combine_pieces(pieces, delimiter_state)
         result = StringLiteral.new string
@@ -2002,16 +2003,18 @@ module Crystal
       if needs_heredoc_indent_removed?(delimiter_state)
         remove_heredoc_indent(pieces, delimiter_state.heredoc_indent)
       else
-        pieces.map do |piece|
+        starts_with_interpolation = pieces.first?.is_a?(ASTNode)
+        new_pieces = pieces.map do |piece|
           value = piece.value
           value.is_a?(String) ? StringLiteral.new(value) : value
         end
+        {new_pieces, starts_with_interpolation}
       end
     end
 
     private def combine_pieces(pieces, delimiter_state)
       if needs_heredoc_indent_removed?(delimiter_state)
-        pieces = remove_heredoc_indent(pieces, delimiter_state.heredoc_indent)
+        pieces, _ = remove_heredoc_indent(pieces, delimiter_state.heredoc_indent)
         pieces.join { |piece| piece.as(StringLiteral).value }
       else
         pieces.map(&.value).join
@@ -2120,8 +2123,9 @@ module Crystal
       delimiter_state, has_interpolation, options, token_end_location = consume_delimiter pieces, delimiter_state, has_interpolation
 
       if has_interpolation
-        pieces = combine_interpolation_pieces(pieces, delimiter_state)
+        pieces, starts_with_interpolation = combine_interpolation_pieces(pieces, delimiter_state)
         node.expressions.concat(pieces)
+        node.starts_with_interpolation = starts_with_interpolation
       else
         string = combine_pieces(pieces, delimiter_state)
         node.expressions.push(StringLiteral.new(string).at(node.location).at_end(token_end_location))
@@ -2195,13 +2199,15 @@ module Crystal
         line = remove_heredoc_from_line(line, indent, pieces.last.line_number) if remove_indent
         add_heredoc_piece new_pieces, line
       end
-      new_pieces.map do |piece|
+      starts_with_interpolation = new_pieces.first?.is_a?(ASTNode)
+      new_pieces = new_pieces.map do |piece|
         if piece.is_a?(String)
           StringLiteral.new(piece)
         else
           piece
         end
       end
+      {new_pieces, starts_with_interpolation}
     end
 
     private def add_heredoc_piece(pieces, piece : String)

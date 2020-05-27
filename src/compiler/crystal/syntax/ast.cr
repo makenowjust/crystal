@@ -296,7 +296,13 @@ module Crystal
   class StringInterpolation < ASTNode
     property expressions : Array(ASTNode)
 
-    def initialize(@expressions : Array(ASTNode))
+    # When the node represents a string literal starting with interpolation like `"#{...}"`,
+    # it become `true`, otherwise it is `false`.
+    # If this property is `false` (resp. `true`), odd (resp. even) index elements of
+    # `expressions` are string literal, and even (resp. odd) index elements are interpolation.
+    property? starts_with_interpolation : Bool
+
+    def initialize(@expressions : Array(ASTNode), @starts_with_interpolation : Bool = false)
     end
 
     def accept_children(visitor)
@@ -304,7 +310,7 @@ module Crystal
     end
 
     def clone_without_location
-      StringInterpolation.new(@expressions.clone)
+      node = StringInterpolation.new(@expressions.clone, @starts_with_interpolation)
     end
 
     def_equals_and_hash expressions

@@ -537,6 +537,10 @@ module Crystal
       heredoc_line = @line
       heredoc_end = @line
 
+      if is_heredoc && node.starts_with_interpolation?
+        skip_strings
+      end
+
       node.expressions.each do |exp|
         if @token.type == :DELIMITER_END
           # Heredoc cannot contain string continuation,
