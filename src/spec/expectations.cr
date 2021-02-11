@@ -1,4 +1,27 @@
+require "diff"
+
 module Spec
+  # Compute the difference between two values *expected_value* and *actual_value*
+  # by using `Diff.diff`.
+  def self.diff_values(expected_value, actual_value)
+    expected = expected_value.pretty_inspect
+    actual = actual_value.pretty_inspect
+    return unless expected.includes?('\n') || actual.includes?('\n')
+    result = Diff.unified_diff(expected, actual)
+
+    # When the diff output is nothing even though the two values do not equal,
+    # it returns a fallback message so far.
+    if result && result.empty?
+      klass = expected_value.class
+      return <<-MSG
+        No visible difference in the `#{klass}#pretty_inspect` output.
+        You should look at the implementation of `#==` on #{klass} or its members.
+        MSG
+    end
+
+    result
+  end
+
   # :nodoc:
   struct EqualExpectation(T)
     def initialize(@expected_value : T)
@@ -46,7 +69,19 @@ module Spec
           expected += " : #{@expected_value.class}"
           got += " : #{actual_value.class}"
         end
-        "Expected: #{expected}\n     got: #{got}"
+        msg = <<-MSG
+          Expected: #{expected}
+               got: #{got}
+          MSG
+        if diff = Spec.diff_values(expected_value, actual_value)
+          msg = <<-MSG
+            #{msg}
+
+            Difference:
+            #{diff}
+            MSG
+        end
+        msg
       end
     end
 
